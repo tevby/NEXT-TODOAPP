@@ -30,21 +30,74 @@
 //     return Response.json({ error: "Unauthorized" }, { status: 401 });
 //   }
 // }
+// import jwt from "jsonwebtoken";
+// import { todos } from "@/app/api/_store"; // <-- our in-memory store
+// import { NextRequest } from "next/server";
+
+// const SECRET = process.env.SECRET ?? "dev-secret-change-me";
+
+// export async function GET(
+//   req: NextRequest,
+//   context: { params: Promise<{ id: string }> }
+// )  {
+//   try {
+//     // Auth header: "Bearer <token>"
+//     const auth = req.headers.get("authorization");
+//     if (!auth) {
+//       return Response.json({ error: "Unauthorized" }, { status: 401 });
+//     }
+
+//     const token = auth.split(" ")[1];
+//     const decoded = jwt.verify(token, SECRET) as { userId: number };
+
+//     const { id } = await context.params;
+//     if (Number.isNaN(id)) {
+//       return Response.json({ error: "Bad id" }, { status: 400 });
+//     }
+
+//     const todo = todos.find(t => t.id === Number(id));
+//     if (!todo || todo.userId !== decoded.userId) {
+//       return Response.json({ error: "Not found" }, { status: 404 });
+//     }
+
+//     return Response.json(todo);
+//   } catch {
+//     return Response.json({ error: "Unauthorized" }, { status: 401 });
+//   }
+// }
 import jwt from "jsonwebtoken";
-import { todos } from "@/app/api/_store"; // <-- our in-memory store
+import { todos } from "@/app/api/_store";
 import { NextRequest } from "next/server";
 
 const SECRET = process.env.SECRET ?? "dev-secret-change-me";
 
+// CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+// Handle OPTIONS request (CORS preflight)
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 200,
+    headers: corsHeaders,
+  });
+}
+
 export async function GET(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
-)  {
+) {
   try {
     // Auth header: "Bearer <token>"
     const auth = req.headers.get("authorization");
     if (!auth) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json(
+        { error: "Unauthorized" },
+        { status: 401, headers: corsHeaders }
+      );
     }
 
     const token = auth.split(" ")[1];
@@ -52,16 +105,25 @@ export async function GET(
 
     const { id } = await context.params;
     if (Number.isNaN(id)) {
-      return Response.json({ error: "Bad id" }, { status: 400 });
+      return Response.json(
+        { error: "Bad id" },
+        { status: 400, headers: corsHeaders }
+      );
     }
 
     const todo = todos.find(t => t.id === Number(id));
     if (!todo || todo.userId !== decoded.userId) {
-      return Response.json({ error: "Not found" }, { status: 404 });
+      return Response.json(
+        { error: "Not found" },
+        { status: 404, headers: corsHeaders }
+      );
     }
 
-    return Response.json(todo);
+    return Response.json(todo, { headers: corsHeaders });
   } catch {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json(
+      { error: "Unauthorized" },
+      { status: 401, headers: corsHeaders }
+    );
   }
 }

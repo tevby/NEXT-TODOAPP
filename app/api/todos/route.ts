@@ -63,10 +63,95 @@
 //   await db.delete(todos).where(eq(todos.id, id)).run();
 //   return Response.json({ success: true });
 // }
+// import jwt from "jsonwebtoken";
+// import { todos, nextTodoId } from "@/app/api/_store";
+
+// const SECRET = process.env.SECRET ?? "dev-secret-change-me";
+
+// function verify(req: Request) {
+//   const auth = req.headers.get("authorization");
+//   if (!auth) throw new Error("Unauthorized");
+//   const token = auth.split(" ")[1];
+//   const payload = jwt.verify(token, SECRET) as { userId: number };
+//   return payload;
+// }
+
+// export async function GET(req: Request) {
+//   try {
+//     const { userId } = verify(req);
+//     const list = todos.filter(t => t.userId === userId);
+//     return Response.json(list);
+//   } catch {
+//     return Response.json({ error: "Unauthorized" }, { status: 401 });
+//   }
+// }
+
+// export async function POST(req: Request) {
+//   try {
+//     const { userId } = verify(req);
+//     const body = await req.json();
+//     const newTodo = {
+//       id: nextTodoId(),
+//       userId,
+//       title: String(body.title ?? "").trim(),
+//       completed: false,
+//     };
+//     todos.push(newTodo);
+//     return Response.json(newTodo);
+//   } catch {
+//     return Response.json({ error: "Unauthorized" }, { status: 401 });
+//   }
+// }
+
+// export async function PUT(req: Request) {
+//   try {
+//     verify(req); // we don't actually need the userId here for global edit
+//     const body = await req.json() as { id: number; title?: string; completed?: boolean };
+//     const idx = todos.findIndex(t => t.id === body.id);
+//     if (idx === -1) return Response.json({ error: "Not found" }, { status: 404 });
+
+//     todos[idx] = {
+//       ...todos[idx],
+//       title: body.title ?? todos[idx].title,
+//       completed: typeof body.completed === "boolean" ? body.completed : todos[idx].completed,
+//     };
+//     return Response.json({ success: true });
+//   } catch {
+//     return Response.json({ error: "Unauthorized" }, { status: 401 });
+//   }
+// }
+
+// export async function DELETE(req: Request) {
+//   try {
+//     verify(req);
+//     const { id } = await req.json() as { id: number };
+//     const idx = todos.findIndex(t => t.id === id);
+//     if (idx === -1) return Response.json({ error: "Not found" }, { status: 404 });
+//     todos.splice(idx, 1);
+//     return Response.json({ success: true });
+//   } catch {
+//     return Response.json({ error: "Unauthorized" }, { status: 401 });
+//   }
+// }
 import jwt from "jsonwebtoken";
 import { todos, nextTodoId } from "@/app/api/_store";
 
 const SECRET = process.env.SECRET ?? "dev-secret-change-me";
+
+// CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+// Handle OPTIONS request (CORS preflight)
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 200,
+    headers: corsHeaders,
+  });
+}
 
 function verify(req: Request) {
   const auth = req.headers.get("authorization");
@@ -80,9 +165,12 @@ export async function GET(req: Request) {
   try {
     const { userId } = verify(req);
     const list = todos.filter(t => t.userId === userId);
-    return Response.json(list);
+    return Response.json(list, { headers: corsHeaders });
   } catch {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json(
+      { error: "Unauthorized" },
+      { status: 401, headers: corsHeaders }
+    );
   }
 }
 
@@ -97,27 +185,38 @@ export async function POST(req: Request) {
       completed: false,
     };
     todos.push(newTodo);
-    return Response.json(newTodo);
+    return Response.json(newTodo, { headers: corsHeaders });
   } catch {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json(
+      { error: "Unauthorized" },
+      { status: 401, headers: corsHeaders }
+    );
   }
 }
 
 export async function PUT(req: Request) {
   try {
-    verify(req); // we don't actually need the userId here for global edit
+    verify(req);
     const body = await req.json() as { id: number; title?: string; completed?: boolean };
     const idx = todos.findIndex(t => t.id === body.id);
-    if (idx === -1) return Response.json({ error: "Not found" }, { status: 404 });
+    if (idx === -1) {
+      return Response.json(
+        { error: "Not found" },
+        { status: 404, headers: corsHeaders }
+      );
+    }
 
     todos[idx] = {
       ...todos[idx],
       title: body.title ?? todos[idx].title,
       completed: typeof body.completed === "boolean" ? body.completed : todos[idx].completed,
     };
-    return Response.json({ success: true });
+    return Response.json({ success: true }, { headers: corsHeaders });
   } catch {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json(
+      { error: "Unauthorized" },
+      { status: 401, headers: corsHeaders }
+    );
   }
 }
 
@@ -126,10 +225,18 @@ export async function DELETE(req: Request) {
     verify(req);
     const { id } = await req.json() as { id: number };
     const idx = todos.findIndex(t => t.id === id);
-    if (idx === -1) return Response.json({ error: "Not found" }, { status: 404 });
+    if (idx === -1) {
+      return Response.json(
+        { error: "Not found" },
+        { status: 404, headers: corsHeaders }
+      );
+    }
     todos.splice(idx, 1);
-    return Response.json({ success: true });
+    return Response.json({ success: true }, { headers: corsHeaders });
   } catch {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json(
+      { error: "Unauthorized" },
+      { status: 401, headers: corsHeaders }
+    );
   }
 }
