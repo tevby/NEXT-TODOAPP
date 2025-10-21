@@ -164,6 +164,7 @@ export default function TodosPage() {
     return (
         <>
             <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-sm">
+                <button onClick={()=>logout()} className="bg-red-800">Logout</button>
                 <header className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">TodoApp</h1>
                 </header>
